@@ -185,16 +185,20 @@ export async function episodes(ref) {
 
         const titleMatch = epMatch[2].match(/<span[^>]*>([^<]+)<\/span>/i) || epMatch[2].match(/alt="([^"]+)"/i);
         const imgMatch = epMatch[2].match(/src=(?:"([^"]+)"|([^ >]+))/i);
-        let still = imgMatch ? (imgMatch[1] || imgMatch[2]) : undefined;
+        let still = imgMatch ? (imgMatch[1] || imgMatch[2]) : null;
         if (still && still.startsWith("//")) still = "https:" + still;
 
-        episodesList.push({
+        const ep = {
           season: season,
           number: number,
           ref: epRef,
-          title: titleMatch ? cleanText(titleMatch[1]) : `Episodio ${number}`,
-          still: still
-        });
+          title: titleMatch ? cleanText(titleMatch[1]) : `Episodio ${number}`
+        };
+        
+        // Solo agregamos la propiedad si no es nula, evitando enviar 'undefined' a Java
+        if (still) ep.still = still;
+        
+        episodesList.push(ep);
       }
     }
   }
