@@ -211,38 +211,106 @@ export async function episodes(ref) {
 // ==========================================
 // 4. RESOLVE
 // ==========================================
+// 4. La nueva versión cazadora de iframes
 export async function resolve(ref) {
-  const res = await kino.fetch(ref, {
-    headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+  const res1 = await kino.fetch(ref, { 
+    headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" } 
   });
+  if (!res1.ok) throw new Error("No se pudo cargar Cuevana");
+  const html1 = await res1.text();
 
-  if (!res.ok) throw new Error("No se pudo cargar la página");
-  const html = await res.text();
-  
   const serverRegex = /data-server="([^"]+)"/g;
   const servers = [];
   let match;
-  
-  while ((match = serverRegex.exec(html)) !== null) {
-    servers.push(match[1]);
+  while ((match = serverRegex.exec(html1)) !== null) servers.push(match[1]);
+
+  const cuevanaWrappers = [];
+  for (const s of servers) {
+    let url = s;
+    if (s.includes("?v=")) {
+      try { url = base64Decode(s.split("?v=")[1]); } catch(e) {}
+    }
+    if (url.startsWith("//")) url = "https:" + url;
+    if (url.includes("tungtungsahur")) cuevanaWrappers.push(url);
   }
 
-  if (servers.length === 0) throw new Error("No se encontraron servidores de video");
+  if (cuevanaWrappers.length === 0) throw new Error("No se encontraron envoltorios clásicos.");
 
-  const base64Servers = servers.filter(s => s.includes("?v="));
-  
-  if (base64Servers.length > 0) {
-    const rawCode = base64Servers[0].split("?v=")[1];
-    let finalUrl = base64Decode(rawCode);
+  for (const url of cuevanaWrappers) {
+    kino.log(`\n⏳ Abriendo envoltorio de Cuevana: ${url}`);
+    try {
+      const tokenMatch = url.match(/token=([^&]+)/);
+      if (tokenMatch) {
+        const token = tokenMatch[1];
+        const serverIndex = token[0];
+        const encodedData = token.slice(1);
 
-    return {
-      url: finalUrl,
-      headers: {
-        "Referer": BASE_URL,
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        const serversDict = {
+            '1': 'https://lkhjerbhye3wjkhodvh5xiczuvd.lol/v/',
+            '2': 'https://filemoon.sx/e/',
+            '3': 'https://lkhjerbhye3wjkhodvh5xlczuvd.lol/e/',
+            '4': 'https://dood.li/e/'
+        };
+
+        if (serversDict[serverIndex]) {
+          const key = 'a45f04ce-2394-47c3-b718-0ecd97ce51d6';
+          const decoded = base64Decode(encodedData);
+          let decrypted = '';
+          
+          for (let i = 0; i < decoded.length; i++) {
+              decrypted += String.fromCharCode(decoded.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+          }
+          
+          let iframeUrl = serversDict[serverIndex] + decrypted;
+          kino.log(`👉 IFRAME SECRETO DECRIPTADO: ${iframeUrl}`);
+          
+          kino.log(`⏳ Entrando al servidor final...`);
+          const res3 = await kino.fetch(iframeUrl, { headers: { "Referer": url, "User-Agent": "Mozilla/5.0" } });
+          const html3 = await res3.text();
+
+          const scripts = html3.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+          let scriptSospechoso = "";
+          
+          if (scripts) {
+            for (const s of scripts) {
+               if (s.includes('eval(function(p,a,c,k,e,d)')) {
+                   scriptSospechoso = s.replace(/<script[^>]*>|<\/script>/gi, "").trim();
+                   
+                   const packerMatch = scriptSospechoso.match(/eval\((function\(p,a,c,k,e,d\)[\s\S]+)\)/);
+                   if (packerMatch) {
+                       // Al usar new Function, el código empaquetado se ejecuta a sí mismo y devuelve el string final.
+                       const unpackedCode = new Function("return (" + packerMatch[1] + ");")();
+                       
+                       const streamFinal = unpackedCode.match(/https?:\/\/[^"'\s\\]+\.(?:m3u8|mp4)[^"'\s\\]*/i) ||
+                                           unpackedCode.match(/(?:file|src|url)\s*:\s*["'](https?:\/\/[^"']+)["']/i);
+                       
+                       if (streamFinal) {
+                         kino.log(`✅ ¡STREAM RESCATADO DESPUÉS DE UNPACK!`);
+                         return {
+                           url: streamFinal[1] || streamFinal[0],
+                           headers: { "Referer": iframeUrl }
+                         };
+                       }
+                   }
+               } else {
+                 const streamFinal = html3.match(/https?:\/\/[^"'\s\\]+\.(?:m3u8|mp4)[^"'\s\\]*/i) ||
+                                     html3.match(/(?:file|src|url)\s*:\s*["'](https?:\/\/[^"']+)["']/i);
+                 if (streamFinal) {
+                    kino.log(`✅ ¡STREAM RESCATADO!`);
+                    return {
+                      url: streamFinal[1] || streamFinal[0],
+                      headers: { "Referer": iframeUrl }
+                    };
+                 }
+               }
+            }
+          }
+        }
       }
-    };
+    } catch (error) {
+      kino.log(`Fallo al explorar ${url}:`, error.message);
+    }
   }
 
-  throw new Error("No hay servidores compatibles disponibles");
+  throw new Error("No se pudo extraer el video final. Revisa la consola.");
 }
