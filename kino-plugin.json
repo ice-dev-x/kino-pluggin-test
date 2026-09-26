@@ -1,7 +1,7 @@
 {
   "id": "cuevana3e",
   "name": "Cuevana3e",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "apiVersion": 1,
   "entry": "plugin.js",
   "description": "Películas y series en español latino y castellano desde Cuevana3e",
@@ -14,10 +14,14 @@
     "*.vsembed.ru",
     "vidlink.pro",
     "*.vidlink.pro",
-    "videasy.net",
-    "*.videasy.net",
-    "vidapi.xyz",
-    "*.vidapi.xyz"
+    "filemoon.sx",
+    "*.filemoon.sx",
+    "dood.li",
+    "*.dood.li",
+    "lkhjerbhye3wjkhodvh5xiczuvd.lol",
+    "*.lkhjerbhye3wjkhodvh5xiczuvd.lol",
+    "dramiyos-cdn.com",
+    "*.dramiyos-cdn.com"
   ],
   "capabilities": [
     "search",
