@@ -4,7 +4,7 @@
   "version": "1.0.9",
   "apiVersion": 1,
   "entry": "plugin.js",
-  "icon": "icon.jpg",
+  "icon": "icon.png",
   "description": "Películas y series en español",
   "author": "ice-dev-x",
   "homepage": "https://cuevana3e.pro",
